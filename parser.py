@@ -86,7 +86,7 @@ def htmlFilter(url, html, parser):
 	HTML = set()
 	CSS = set()
 	XML = set()
-	DOWNLOAD = set()
+	DOWNLOAD = dict()
 
 	startPath = url2filePath(url)
 	postfixList = ['.html', '.hml', '.shtml', 'shml', '']
@@ -131,7 +131,7 @@ def htmlFilter(url, html, parser):
 		relativePath = os.path.relpath(filePath, os.path.dirname(startPath))
 		link = autoBackSlash(info[1])
 		html = re.sub('(?<=\"|\')%s(?=\"|\')'%link, relativePath, html)
-		DOWNLOAD.add(realUrl)
+		DOWNLOAD[filePath] = realUrl
 
 	# 处理XML
 	for link in parser.xmlSet:
@@ -157,7 +157,9 @@ def htmlFilter(url, html, parser):
 	saveSet(xml_txt_filename, XML)
 
 	download_filename = 'data/download/download_' + hexdigest + '.json' 
-	saveSet(download_filename, DOWNLOAD)
+	saveSet(download_filename)
+	with open(download_filename, 'w') as f:
+		json.dump(DOWNLOAD, f, indent=2)
 
 	status_filename = 'data/status/status_' + hexdigest + '.json'
 	saveSet(status_filename)
@@ -170,7 +172,6 @@ def htmlFilter(url, html, parser):
 
 	dirName = os.path.dirname(startPath)
 	if not os.path.exists(dirName):
-		print(dirName)
 		os.makedirs(dirName)
 	with open(startPath, 'w') as f:
 		f.write(html)
@@ -260,7 +261,7 @@ def cssrun(url):
 
 if __name__ == '__main__':
 
-	htmlrun('https://www.leavesongs.com/')
+	htmlrun('http://www.jianshu.com/p/00f855886b33')
 
 
 

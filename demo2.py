@@ -19,6 +19,8 @@ import re
 # m = md5(filePath.encode('utf8'))
 
 # print(os.path.splitext(parse.urlparse(filePath).path)[1])
-print(''[:9])
+with open('data/css/total_css.txt', 'r') as f:
+	for url in f:
+		print(url.strip())
 
 

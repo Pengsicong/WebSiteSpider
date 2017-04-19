@@ -35,7 +35,7 @@ def url2filePath(url, source_type = 'html'):
     return filepath
 
 def saveSet(fileName, itemSet=None):
-    
+
     dirName = os.path.dirname(fileName)
     if not os.path.exists(dirName):
         os.makedirs(dirName)

@@ -9,10 +9,7 @@ def engine(initUrl, crawl_type='pc', max_deep=0, max_pageNum=0):
 		print('URL ERROR!')
 		return
 
-	htmlQueue = Queue()
-	htmlQueue.get(initUrl)
-
-	manager(htmlQueue, initUrl, crawl_type, max_deep, max_pageNum)
+	manager(initUrl, crawl_type, max_deep, max_pageNum)
 
 	
 

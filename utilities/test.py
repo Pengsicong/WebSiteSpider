@@ -26,7 +26,6 @@ if __name__ == '__main__':
 
 
 	print(o)
-# print(o.hostname)
-# print(o.port)
+#
 
 
