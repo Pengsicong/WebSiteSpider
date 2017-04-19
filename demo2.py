@@ -6,9 +6,6 @@ import re
 
 
 
-print(link.replace('?', '\?'))
-relativePath = '22'
-print(re.sub('(?<=\"|\')%s(?=\"|\')'%link, relativePath, html))
 
 # dirname = os.path.dirname(dirname)
 
@@ -22,6 +19,6 @@ print(re.sub('(?<=\"|\')%s(?=\"|\')'%link, relativePath, html))
 # m = md5(filePath.encode('utf8'))
 
 # print(os.path.splitext(parse.urlparse(filePath).path)[1])
-
+print(''[:9])
 
 

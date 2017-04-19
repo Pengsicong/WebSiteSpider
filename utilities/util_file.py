@@ -34,5 +34,19 @@ def url2filePath(url, source_type = 'html'):
 
     return filepath
 
+def saveSet(fileName, itemSet=None):
+    
+    dirName = os.path.dirname(fileName)
+    if not os.path.exists(dirName):
+        os.makedirs(dirName)
+
+    if itemSet == None:
+        return
+
+    with open(fileName, 'w') as f:
+        for item in itemSet:
+            f.write(item + '\n')
+
+
 if __name__ == '__main__':
     print(url2filePath('http://www.baidu.com/'))

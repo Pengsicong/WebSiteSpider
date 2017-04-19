@@ -1,9 +1,9 @@
+from utilities.util_file import url2filePath, saveSet
 from html.parser import HTMLParser
-from utilities.util_file import url2filePath
 from hashlib import md5
 from urllib import parse
-import json
 import requests
+import json
 import re
 import os
 
@@ -89,7 +89,7 @@ def htmlFilter(url, html, parser):
 	HTML = set()
 	CSS = set()
 	XML = set()
-	DOWNLOAD = dict()
+	DOWNLOAD = set()
 
 	startPath = url2filePath(url)
 	postfixList = ['.html', '.hml', '.shtml', 'shml', '']
@@ -134,7 +134,7 @@ def htmlFilter(url, html, parser):
 		relativePath = os.path.relpath(filePath, os.path.dirname(startPath))
 		link = autoBackSlash(info[1])
 		html = re.sub('(?<=\"|\')%s(?=\"|\')'%link, relativePath, html)
-		DOWNLOAD[filePath] = realUrl
+		DOWNLOAD.add(realUrl)
 
 	# 处理XML
 	for link in parser.xmlSet:
@@ -148,31 +148,26 @@ def htmlFilter(url, html, parser):
 
 
 	m = md5(url.encode('utf8'))
-	hexdigest = m.hexdigest()
+	hexdigest = str(m.hexdigest())
 
-	dirname = 'data/'
-	html_txt_filename = dirname + 'html_' + str(hexdigest) + '.txt'
-	css_txt_filename = dirname + 'css_' + str(hexdigest) + '.txt'
-	xml_txt_filename = dirname + 'xml_' + str(hexdigest) + '.txt'
-	download_filename = dirname + 'download_' + str(hexdigest) + '.json' 
-	status_filename = dirname + 'status_' + str(hexdigest) + '.json'
+	html_txt_filename = 'data/html/html_' + hexdigest + '.txt'
+	saveSet(html_txt_filename, HTML)
 
-	dirname = 'data/'
-	if not os.path.exists(dirname):
-		os.makedirs(dirname)
+	css_txt_filename = 'data/css/css_' + hexdigest + '.txt'
+	saveSet(css_txt_filename, CSS)
 
-	with open(html_txt_filename, 'w') as f:
-		for link in HTML:
-			f.write(link+'\n')
+	xml_txt_filename = 'data/xml/xml_' + hexdigest + '.txt'
+	saveSet(xml_txt_filename, XML)
 
-	with open(css_txt_filename, 'w') as f:
-		for link in CSS:
-			f.write(link+'\n')
-	with open(xml_txt_filename, 'w') as f:
-		for xml in XML:
-			f.write(xml+'\n')
-	with open(download_filename, 'w') as f:
-		json.dump(DOWNLOAD, f, indent = 2)
+	download_filename = 'data/download/download_' + hexdigest + '.json' 
+	saveSet(download_filename, DOWNLOAD)
+
+	status_filename = 'data/status/status_' + hexdigest + '.json'
+	saveSet(status_filename)
+	with open(status_filename, 'w') as f:
+		d = {}
+		d[url] = True
+		json.dump(d, f, indent=2)
 
 	startPath = 'website/' + startPath 
 
@@ -217,8 +212,34 @@ def download_html(url, user_type, proxies):
 		print(url + '  获取html失败！')
 		return None
 
+def cssFilter(url, css):
+	imgSet = set()
+	startPath = url2filePath(url)
 
-def run(url, user_type='pc', proxies=None):
+	for link in re.findall('(?<=url\()[^\)]+', css):
+		realUrl = parse.urljoin(url, link)
+		filePath = url2filePath(realUrl)
+		if link[:1] == '/' or link[:4] == 'http':
+			realtivePath = os.path.relpath(filePath, os.path.dirname(startPath))
+			css = re.sub('(?<=url\()%s(?=\))' %link, realtivePath, css)
+
+		imgSet.add(realUrl)
+
+	m = md5(url.encode('utf8'))
+	hexdigest = str(m.hexdigest())
+	fileName = 'data/img/img_' + hexdigest + '.txt'
+	saveSet(fileName, imgSet)
+
+	status_filename = 'data/status/status_' + hexdigest + '.json'
+	saveSet(status_filename)
+	with open(status_filename, 'w') as f:
+		d = {}
+		d[url] = True
+		json.dump(d, f, indent=2)
+
+
+
+def htmlrun(url, user_type='pc', proxies=None):
 
 	url, html = download_html(url, user_type, proxies)
 	# global html
@@ -230,8 +251,20 @@ def run(url, user_type='pc', proxies=None):
 	parser.feed(html)
 	htmlFilter(url, html, parser)
 
+def cssrun(url):
+	try:
+		r = requests.get(url)
+		r.raise_for_status()
+		css = r.text
+		cssFilter(url, css)
+	except:
+		print('获取css失败')
+		return
+
 if __name__ == '__main__':
-	run('http://python3-cookbook.readthedocs.io/')
+
+	htmlrun('http://python3-cookbook.readthedocs.io/')
+	cssrun('http://www.hacg.wiki/2/new2.css')
 
 
 		
