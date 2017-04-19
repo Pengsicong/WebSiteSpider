@@ -71,9 +71,6 @@ class htmlParser(HTMLParser):
 		# 			self.jsSet.add(attr[1])
 
 
-		# 获取Src链接
-
-
 def autoBackSlash(string):
 	if string.find('?') != -1:
 		string = string.replace('?', '\?')
@@ -263,8 +260,8 @@ def cssrun(url):
 
 if __name__ == '__main__':
 
-	htmlrun('http://python3-cookbook.readthedocs.io/')
-	cssrun('http://www.hacg.wiki/2/new2.css')
+	htmlrun('https://www.leavesongs.com/')
+
 
 
 		
