@@ -2,6 +2,8 @@
 
 from queue import Queue
 from utilities import test
+from manager import manager
+from download import download
 
 
 def engine(initUrl, crawl_type='pc', max_deep=0, max_pageNum=0):
@@ -10,6 +12,8 @@ def engine(initUrl, crawl_type='pc', max_deep=0, max_pageNum=0):
 		return
 
 	manager(initUrl, crawl_type, max_deep, max_pageNum)
+
+	downloads()
 
 	
 

@@ -1,6 +1,7 @@
 from gevent import monkey; monkey.patch_all()
 from gevent.lock import BoundedSemaphore
 from gevent.pool import Pool
+import gevent
 from urllib import parse
 import random
 import os
@@ -31,32 +32,43 @@ def save(url,r):
 
 
 def simulateHttpIo(url):
+	url = str(url)
 
 	sem.acquire()
 	start = time.time()
 	print(url + ' 下载开始！')
-	r = requests.get(url)
-	r.encoding = r.apparent_encoding
-	save(url, r)
-	# time.sleep(2)
+	# r = requests.get(url)
+	# r.encoding = r.apparent_encoding
+	# save(url, r)
+	time.sleep(2)
 	sem.release()
 	duration  = time.time() - start
 	print(url + ' 下载完毕！用时：%.2fs ' %duration)
 
 
-urlList = []
+urlList = ['http://www.baidu.com/',
+'http://www.baidu2.com/',
+'http://www.baidu3.com/',
+'http://www.baidu4.com/']
 
 
-for url in urlList:
-	simulateHttpIo(url)
 
-simulateHttpIo('http://www.baidu.com/')
 
-gList = [gevent.spawn(simulateHttpIo,url) for url in urlList]
-
+# for url in urlList:
+# 	simulateHttpIo(url)
+gList = []
+# simulateHttpIo('http://www.baidu.com/')
+for i in range(8):
+	g = gevent.spawn(simulateHttpIo, i)
+	gList.append(g)
 gevent.joinall(gList)
+print('hell')
 
-pool = Pool()
+
+# gList = [gevent.spawn(simulateHttpIo,url) for url in range(10)]
 
 
-pool.map(simulateHttpIo, urlList)
+# pool = Pool()
+
+
+# pool.map(simulateHttpIo, urlList)

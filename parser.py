@@ -1,7 +1,10 @@
 from utilities.util_file import url2filePath, saveSet
+from gevent.lock import BoundedSemaphore
+import gevent
 from html.parser import HTMLParser
 from hashlib import md5
 from urllib import parse
+from redis import Redis
 import requests
 import json
 import re
@@ -83,10 +86,11 @@ def is_interior_url(realUrl, url):
 		return False
 
 def htmlFilter(url, html, parser):
-	HTML = set()
-	CSS = set()
-	XML = set()
-	DOWNLOAD = dict()
+	# HTML = set()
+	# CSS = set()
+	# XML = set()
+	# DOWNLOAD = dict()
+	redis = Redis()
 
 	startPath = url2filePath(url)
 	postfixList = ['.html', '.hml', '.shtml', 'shml', '']
@@ -101,6 +105,7 @@ def htmlFilter(url, html, parser):
 
 			relativePath = os.path.relpath(filePath, os.path.dirname(startPath))
 
+			# 处理锚点符号 #
 			o = parse.urlparse(realUrl)
 			if o.fragment != '':
 				urlfile = realUrl.split('#')[0]
@@ -112,8 +117,10 @@ def htmlFilter(url, html, parser):
 
 			# 获取url后缀
 			postfix = os.path.splitext(parse.urlparse(urlfile).path)[1]
+
 			if postfix in postfixList:
-				HTML.add(urlfile)
+				# HTML.add(urlfile)
+				redis.sadd('HTML', urlfile)
 
 	# 处理CSS
 	for link in parser.cssSet:
@@ -122,7 +129,8 @@ def htmlFilter(url, html, parser):
 		relativePath = os.path.relpath(filePath, os.path.dirname(startPath))
 		link = autoBackSlash(link)
 		html = re.sub('(?<=\"|\')%s(?=\"|\')'%link, relativePath, html)
-		CSS.add(realUrl)
+		# CSS.add(realUrl)
+		redis.sadd('CSS', realUrl)
 
 	# 处理DOWNLOAD
 	for info in parser.sourceSet:
@@ -131,7 +139,8 @@ def htmlFilter(url, html, parser):
 		relativePath = os.path.relpath(filePath, os.path.dirname(startPath))
 		link = autoBackSlash(info[1])
 		html = re.sub('(?<=\"|\')%s(?=\"|\')'%link, relativePath, html)
-		DOWNLOAD[filePath] = realUrl
+		# DOWNLOAD[filePath] = realUrl
+		redis.hset('DOWNLOAD', filePath, realUrl)
 
 	# 处理XML
 	for link in parser.xmlSet:
@@ -139,46 +148,50 @@ def htmlFilter(url, html, parser):
 		filePath = url2filePath(realUrl)
 		if os.path.splitext(filePath)[1] == '.html':
 			filePath = os.path.splitext(filePath)[0] + '.xml'
-		XML.add(realUrl)
+		# XML.add(realUrl)
+		redis.hset('XML', filePath, realUrl)
 
-
-
-
-	m = md5(url.encode('utf8'))
-	hexdigest = str(m.hexdigest())
-
-	html_txt_filename = 'data/html/html_' + hexdigest + '.txt'
-	saveSet(html_txt_filename, HTML)
-
-	css_txt_filename = 'data/css/css_' + hexdigest + '.txt'
-	saveSet(css_txt_filename, CSS)
-
-	xml_txt_filename = 'data/xml/xml_' + hexdigest + '.txt'
-	saveSet(xml_txt_filename, XML)
-
-	download_filename = 'data/download/download_' + hexdigest + '.json' 
-	saveSet(download_filename)
-	with open(download_filename, 'w') as f:
-		json.dump(DOWNLOAD, f, indent=2)
-
-	status_filename = 'data/status/status_' + hexdigest + '.json'
-	saveSet(status_filename)
-	with open(status_filename, 'w') as f:
-		d = {}
-		d[url] = True
-		json.dump(d, f, indent=2)
-
-	startPath = 'website/' + startPath 
-
+	# 保存修改过后的HTML
+	startPath = 'WWW/' + startPath
 	dirName = os.path.dirname(startPath)
 	if not os.path.exists(dirName):
 		os.makedirs(dirName)
 	with open(startPath, 'w') as f:
 		f.write(html)
 
-	with open(status_filename, 'w') as f:
-		d = {url:True}
-		json.dump(d, f, indent = 2)
+	# 设置STATUS
+	redis.sadd('STATUS',url)	
+
+
+
+	# m = md5(url.encode('utf8'))
+	# hexdigest = str(m.hexdigest())
+
+	# html_txt_filename = 'data/html/html_' + hexdigest + '.txt'
+	# saveSet(html_txt_filename, HTML)
+
+	# css_txt_filename = 'data/css/css_' + hexdigest + '.txt'
+	# saveSet(css_txt_filename, CSS)
+
+	# xml_txt_filename = 'data/xml/xml_' + hexdigest + '.txt'
+	# saveSet(xml_txt_filename, XML)
+
+	# download_filename = 'data/download/download_' + hexdigest + '.json' 
+	# saveSet(download_filename)
+	# with open(download_filename, 'w') as f:
+	# 	json.dump(DOWNLOAD, f, indent=2)
+
+	# status_filename = 'data/status/status_' + hexdigest + '.json'
+	# saveSet(status_filename)
+	# with open(status_filename, 'w') as f:
+	# 	d = {}
+	# 	d[url] = True
+	# 	json.dump(d, f, indent=2)
+
+
+	# with open(status_filename, 'w') as f:
+	# 	d = {url:True}
+	# 	json.dump(d, f, indent = 2)
 
 def download_html(url, user_type, proxies):
 	if user_type == 'pc':
@@ -211,7 +224,8 @@ def download_html(url, user_type, proxies):
 		return None
 
 def cssFilter(url, css):
-	imgSet = set()
+	redis = Redis()
+
 	startPath = url2filePath(url)
 
 	for link in re.findall('(?<=url\()[^\)]+', css):
@@ -221,25 +235,32 @@ def cssFilter(url, css):
 			realtivePath = os.path.relpath(filePath, os.path.dirname(startPath))
 			css = re.sub('(?<=url\()%s(?=\))' %link, realtivePath, css)
 
-		imgSet.add(realUrl)
+		# imgSet.add(realUrl)
+		redis.sadd('IMG', realUrl)
 
-	m = md5(url.encode('utf8'))
-	hexdigest = str(m.hexdigest())
-	fileName = 'data/img/img_' + hexdigest + '.txt'
-	saveSet(fileName, imgSet)
+	# status_filename = 'data/status/status_' + hexdigest + '.json'
+	# saveSet(status_filename)
+	# with open(status_filename, 'w') as f:
+	# 	d = {}
+	# 	d[url] = True
+	# 	json.dump(d, f, indent=2)
 
-	status_filename = 'data/status/status_' + hexdigest + '.json'
-	saveSet(status_filename)
-	with open(status_filename, 'w') as f:
-		d = {}
-		d[url] = True
-		json.dump(d, f, indent=2)
+	startPath = 'WWW/' + startPath
+	dirName = os.path.dirname(startPath)
+	if not os.path.exists(dirName):
+		os.makedirs(dirName)
+	with open(startPath, 'w') as f:
+		f.write(css)
 
+	redis.sadd('STATUS', url)
 
 
 def htmlrun(url, user_type='pc', proxies=None):
 
-	url, html = download_html(url, user_type, proxies)
+	try:
+		url, html = download_html(url, user_type, proxies)
+	except:
+		return
 	# global html
 	if html == None:
 		return False
@@ -250,18 +271,18 @@ def htmlrun(url, user_type='pc', proxies=None):
 	htmlFilter(url, html, parser)
 
 def cssrun(url):
-	try:
-		r = requests.get(url)
-		r.raise_for_status()
-		css = r.text
-		cssFilter(url, css)
-	except:
-		print('获取css失败')
-		return
+	# try:
+	r = requests.get(url)
+	r.raise_for_status()
+	css = r.text
+	cssFilter(url, css)
+	# except:
+	# 	print('获取css失败')
+	# 	return
 
 if __name__ == '__main__':
 
-	htmlrun('http://www.jianshu.com/p/00f855886b33')
+	htmlrun('https://maoxian.de/')
 
 
 

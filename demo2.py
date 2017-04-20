@@ -3,24 +3,9 @@ from hashlib import md5
 from urllib import parse
 import os
 import re
+import redis
 
 
-
-
-# dirname = os.path.dirname(dirname)
-
-# o = parse.urlparse(filePath)
-# print(o)
-# filepath = o.hostname + o.path
-# print(filepath)
-
-# # print(parse.quote(filePath,safe=''))
-
-# m = md5(filePath.encode('utf8'))
-
-# print(os.path.splitext(parse.urlparse(filePath).path)[1])
-with open('data/css/total_css.txt', 'r') as f:
-	for url in f:
-		print(url.strip())
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 
