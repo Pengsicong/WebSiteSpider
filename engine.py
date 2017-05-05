@@ -1,31 +1,25 @@
 # -*- encoding: utf-8 -*-
-
-from queue import Queue
-from utilities import test
+from redis import Redis
 from manager import manager
-from download import download
+from download import downloader
+import requests
+import time
 
+redis = Redis()
 
-def engine(initUrl, crawl_type='pc', max_deep=0, max_pageNum=0):
-	if get_url_tyep(initUrl) != 'html':
-		print('URL ERROR!')
-		return
+def engine(initUrls):
 
-	manager(initUrl, crawl_type, max_deep, max_pageNum)
+	total_pages = manager(initUrls)
 
-	downloads()
+	downloader()
 
-	
+	success_page = int(redis.get('success'))
+	success_rate = success_page / total_pages
+	print('success_page:', success_page)
+	print('total_pages:', total_pages)
+	print('success_rate: %0.2f%%' %(success_rate*100))
+
 
 if __name__ == '__main__':
 	pass
-	# # 入口url
-	# initUrl = ''
-	# # 抓取类型,'pc' or 'phone'
-	# crawl_type = ''
-	# # 最大深度
-	# max_deep = 
-	# # 最大网页数
-	# max_pageNum = 
-
-	# engine(initUrl, crawl_type, max_deep, max_pageNum)
+	engine('http://python3-cookbook.readthedocs.io/zh_CN/latest/')
